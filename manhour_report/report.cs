@@ -1,10 +1,10 @@
 ﻿using Aras.IOM;
-using Excel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
+using Microsoft.Office.Interop.Excel;
 
 namespace manhour_report
 {
@@ -24,6 +24,9 @@ namespace manhour_report
 
         private void button1_Click(object sender, System.EventArgs e)
         {
+            button1.Enabled = false;
+            textBox_message.Text = "报表生成中.......";
+            dateTimePicker_report.Focus();
             //获取输入的时间
             DateTime dt = dateTimePicker_report.Value;
             
@@ -41,6 +44,8 @@ namespace manhour_report
             if (loginItem.isError())
             {
                 MessageBox.Show("访问数据库失败,请重试");
+                button1.Enabled = true;
+                textBox_message.Text = String.Empty;
             }
             else
             {
@@ -75,6 +80,8 @@ namespace manhour_report
                 if (allDateSql.getItemCount() == -1 || allDateSql.getItemCount() == 0)
                 {
                     MessageBox.Show("未查询到数据,请重试");
+                    button1.Enabled = true;
+                    textBox_message.Text = String.Empty;
                     return;
                 }
 
@@ -101,13 +108,13 @@ namespace manhour_report
                     }
                 }
                 //新建Excel和工作簿
-                Excel.Application oXL;
-                Excel._Workbook oWB;
+                Microsoft.Office.Interop.Excel.Application oXL;
+                Microsoft.Office.Interop.Excel._Workbook oWB;
 
                 //启动Excel并获取应用程序对象
-                oXL = new Excel.Application();
+                oXL = new Microsoft.Office.Interop.Excel.Application();
                 oXL.Visible = false;
-                oWB = (Excel._Workbook)(oXL.Workbooks.Add(Missing.Value));
+                oWB = (Microsoft.Office.Interop.Excel._Workbook)(oXL.Workbooks.Add(Missing.Value));
                 //遍历所有的名字
                 for (int i = 0; i < projectSql.getItemCount() ; i++)
                 {
@@ -120,6 +127,8 @@ namespace manhour_report
                         if (sqlResult.Count() <= 0)
                         {
                             MessageBox.Show(name + "无查询结果");
+                            button1.Enabled = true;
+                            textBox_message.Text = String.Empty;
                         }
                         else
                         {
@@ -135,7 +144,7 @@ namespace manhour_report
             }
         }
 
-        private void makeSheet(List<Item> sqlResult, DateTime dt, Excel.Application oXL, Excel._Workbook oWB, string name, Dictionary<string, string> nameMap)
+        private void makeSheet(List<Item> sqlResult, DateTime dt, Microsoft.Office.Interop.Excel.Application oXL, Microsoft.Office.Interop.Excel._Workbook oWB, string name, Dictionary<string, string> nameMap)
         {
             int dtCount = DateTime.DaysInMonth(dt.Year, dt.Month);
             //获取访问数据库的数据
@@ -144,13 +153,13 @@ namespace manhour_report
             {
                 nameSet.Add(sqlResult[i].getProperty("my_name"));
             }
-            
-            Excel._Worksheet oSheet;
+
+            Microsoft.Office.Interop.Excel._Worksheet oSheet;
             try
             {
                 //数据选项菜单
                 oXL.Sheets.Add(Missing.Value, Missing.Value, Missing.Value, Missing.Value);
-                oSheet = (Excel._Worksheet)oWB.ActiveSheet;
+                oSheet = (Microsoft.Office.Interop.Excel._Worksheet)oWB.ActiveSheet;
                 oSheet.Name = name;
 
                 //逐单元添加表标题
@@ -190,6 +199,8 @@ namespace manhour_report
                     if (y == -1)
                     {
                         MessageBox.Show("程序出错啦");
+                        button1.Enabled = true;
+                        textBox_message.Text = String.Empty;
                         return;
                     }
                     DateTime dateTime = DateTime.Parse(dateTimeStr);
@@ -202,16 +213,9 @@ namespace manhour_report
                 //Format A1:D1 as bold, vertical alignment = center.
                 //第一行
                 Range rowRange = oSheet.get_Range("A1", "BZ1");
-                //第一列
-                Range colRange = oSheet.get_Range("A1, A32");
                 rowRange.Font.Bold = true;
-                colRange.Font.Bold = true;
                 rowRange.VerticalAlignment =
-                    Excel.XlVAlign.xlVAlignCenter;
-                colRange.VerticalAlignment =
-                    Excel.XlVAlign.xlVAlignCenter;
-                //自动调整列宽
-                colRange.ColumnWidth = 15;
+                    Microsoft.Office.Interop.Excel.XlVAlign.xlVAlignCenter;
                 rowRange.EntireColumn.AutoFit();
                 
             }
@@ -221,11 +225,18 @@ namespace manhour_report
                 errorMessage = "Error: ";
                 errorMessage = String.Concat(errorMessage, theException.Message);
                 errorMessage = String.Concat(errorMessage, " Line: ");
+                errorMessage = String.Concat(errorMessage, theException.InnerException);
                 errorMessage = String.Concat(errorMessage, theException.Source);
+                errorMessage = String.Concat(errorMessage, theException.ToString());
+                errorMessage = String.Concat(errorMessage, theException.TargetSite);
                 MessageBox.Show(errorMessage, "Error");
             }
             
         }
-        
+
+        private void textBox_message_TextChanged(object sender, EventArgs e)
+        {
+
+        }
     }
 }
